@@ -4,5 +4,7 @@
 [Bb]in
 .vs/
 
+packages/
+
 *~
 

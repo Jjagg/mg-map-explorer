@@ -16,7 +16,10 @@ namespace MapExplorer
 
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
-        private Texture2D _map;
+
+        private Texture2D _textureMap;
+        private Texture2D _rtMap;
+        private Texture2D _currentMap;
 
         // The zoom of the map
         private float _zoom = 1f;
@@ -49,8 +52,9 @@ namespace MapExplorer
             _blankTexture = new Texture2D(GraphicsDevice, 1, 1);
             _blankTexture.SetData(new[] { Color.White.PackedValue });
 
-            //_map = Content.Load<Texture2D>("map");
-            _map = CreateMap();
+            _textureMap = Content.Load<Texture2D>("map");
+            _rtMap = CreateMap();
+            _currentMap = _rtMap;
 
             _prev = Keyboard.GetState();
             _current = Keyboard.GetState();
@@ -117,12 +121,16 @@ namespace MapExplorer
             if (IsDown(Keys.Up))
                 _offset.Y -= speed;
 
-            _offset.X = MathHelper.Clamp(_offset.X, 0f, _map.Width - GraphicsDevice.PresentationParameters.BackBufferWidth / _zoom);
-            _offset.Y = MathHelper.Clamp(_offset.Y, 0f, _map.Height - GraphicsDevice.PresentationParameters.BackBufferHeight / _zoom);
+            _offset.X = MathHelper.Clamp(_offset.X, 0f, _currentMap.Width - GraphicsDevice.PresentationParameters.BackBufferWidth / _zoom);
+            _offset.Y = MathHelper.Clamp(_offset.Y, 0f, _currentMap.Height - GraphicsDevice.PresentationParameters.BackBufferHeight / _zoom);
 
             // toggle the minimap
             if (IsPressed(Keys.H))
                 _miniMap = !_miniMap;
+
+            // switch the map
+            if (IsPressed(Keys.S))
+                _currentMap = _currentMap == _rtMap ? _textureMap : _rtMap;
 
             _prev = _current;
         }
@@ -146,13 +154,13 @@ namespace MapExplorer
             // SourceRect gives us the source rectangle of the texture we need to render to the screen
             // We render that to the whole viewport
             var rect = SourceRect;
-            _spriteBatch.Draw(_map, GraphicsDevice.Viewport.Bounds, rect, Color.White);
+            _spriteBatch.Draw(_currentMap, GraphicsDevice.Viewport.Bounds, rect, Color.White);
 
             if (_miniMap)
             {
                 var backBufferWidth = GraphicsDevice.PresentationParameters.BackBufferWidth;
                 var backBufferHeight = GraphicsDevice.PresentationParameters.BackBufferHeight;
-                var mapAspect = (float) _map.Height / _map.Width;
+                var mapAspect = (float) _currentMap.Height / _currentMap.Width;
 
                 // pick a width for the minimap and compute the height (to match aspect ratio)
                 const int miniMapWidth = 120;
@@ -166,14 +174,14 @@ namespace MapExplorer
                 _spriteBatch.Draw(_blankTexture, expandedArea, Color.Black);
 
                 // Draw the minimap
-                _spriteBatch.Draw(_map, area, Color.White);
+                _spriteBatch.Draw(_currentMap, area, Color.White);
 
                 // draw the rectangle with the current location
-                var offsetScale = (float) miniMapWidth / _map.Width; // scale offset [0, Map width] -> [0, minimap width]
+                var offsetScale = (float) miniMapWidth / _currentMap.Width; // scale offset [0, Map width] -> [0, minimap width]
                 var scaledScreenWidth = backBufferWidth / _zoom; 
                 var scaledScreenHeight = backBufferHeight / _zoom; 
-                var sizeXScale = scaledScreenWidth / _map.Width;
-                var sizeYScale = scaledScreenHeight / _map.Height;
+                var sizeXScale = scaledScreenWidth / _currentMap.Width;
+                var sizeYScale = scaledScreenHeight / _currentMap.Height;
                 var miniArea = new Rectangle(
                     area.Location + (_offset * offsetScale).ToPoint(),
                     new Point((int) (miniMapWidth * sizeXScale), (int) (miniMapHeight * sizeYScale) ));
