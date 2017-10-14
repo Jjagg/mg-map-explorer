@@ -1,0 +1,8 @@
+#Visual Studio files
+*.user
+[Oo]bj
+[Bb]in
+.vs/
+
+*~
+
